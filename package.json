@@ -1,0 +1,22 @@
+{
+  "name": "foxbot-3",
+  "version": "3.0.0",
+  "description": "FoxBot r.3",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dagg-1/foxbot-3.git"
+  },
+  "author": "Dagg",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dagg-1/foxbot-3/issues"
+  },
+  "homepage": "https://github.com/dagg-1/foxbot-3#readme",
+  "dependencies": {
+    "discord.js": "^11.5.1"
+  }
+}

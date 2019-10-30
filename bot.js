@@ -5,6 +5,14 @@ const axios = require('axios')
 const client = new Discord.Client()
 const prefix = "!"
 
+const phrases = [
+    "A animal has appeared!",
+    "Woah, a animal has arrived!",
+    "The wild animal is here!",
+    "Say hello to this animal!"
+]
+const splitter = /animal/gi
+
 const urls = {
     fox: { uri: "https://dagg.xyz/randomfox", result: "link" }
 }
@@ -22,9 +30,15 @@ client.on('message', message => {
     const command = arguments.shift().toLowerCase();
     
     switch (command) {
-        //#region Fox delivery
+        //#region Fox Delivery
         case "fox":
             getAnimal(message, command)
+            break
+        //#endregion
+
+        //#region Music Bot
+        case "play":
+            musicBot(message, command, arguments)
             break
         //#endregion
     }
@@ -41,6 +55,7 @@ async function getAnimal(message, command) {
         .setAuthor(message.author.tag, message.author.avatarURL) 
         .setImage(await requestIMG(command))
         .setColor(Math.floor(Math.random() * 16777215) + 1)
+        .setDescription(phrases[Math.floor(Math.random() * phrases.length)].replace(splitter, command))
         message.channel.send(animalEmbed)
         .then(async sentMessage => {
             sentMessage.createReactionCollector(filter, {time: null})
@@ -48,6 +63,7 @@ async function getAnimal(message, command) {
                 switch (reaction.emoji.name) {
                     case "➡":
                         animalEmbed.setImage(await requestIMG(command))
+                        animalEmbed.setDescription(phrases[Math.floor(Math.random() * phrases.length)].replace(splitter, command))
                         reaction.remove(message.author.id)
                         sentMessage.edit(animalEmbed)
                         break 
@@ -59,4 +75,15 @@ async function getAnimal(message, command) {
             await sentMessage.react("➡")
             await sentMessage.react("⏹")
         })
+}
+
+function musicBot(message, command, arguments) {
+    let dispatch
+    let active = false
+
+    switch (command) {
+        case "play":
+            if (active == true) return message.channel.send("Something is already playing! I can't be in two places at once!")
+            break
+    }
 }

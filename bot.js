@@ -47,7 +47,7 @@ client.on('message', message => {
             break
         //#endregion
 
-        //#region Music Bot
+        //#region Music Bot (Redirects to musicBot() function)
         case "play":
             musicBot(message, command, arguments)
             break
@@ -67,6 +67,9 @@ client.on('message', message => {
             musicBot(message, command, arguments)
             break
         case "clear":
+            musicBot(message, command, arguments)
+            break
+        case "np":
             musicBot(message, command, arguments)
             break
         //#endregion
@@ -231,6 +234,10 @@ async function musicBot(message, command, arguments) {
         case "clear":
             if (!queue[0]) return message.channel.send("Nothing is queued!")
             queue = []
+            break
+        case "np":
+            if (!dispatch) return message.channel.send("Nothing is currently playing")
+            message.channel.send(playEmbed)
             break
     }
 }

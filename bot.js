@@ -57,6 +57,9 @@ client.on('message', message => {
         case "add":
             musicBot(message, command, arguments)
             break
+        case "queue":
+            musicBot(message, command, arguments)
+            break
         //#endregion
     }
 })
@@ -104,13 +107,13 @@ async function musicBot(message, command, arguments) {
                 info = await youtubedl.getBasicInfo(arguments[0])
             }
             else {
-                let apiresp = await youtubeapi(yttoken, { q: arguments.join().replace(/,/gi, ""), part: 'snippet', type: "video"} )
+                let apiresp = await youtubeapi(yttoken, { q: arguments.join().replace(/,/gi, " "), part: 'snippet', type: "video" })
                 if (!apiresp.items[0]) {
                     return message.channel.send("Nothing was found for your query!")
                 }
                 info = await youtubedl.getBasicInfo(apiresp.items[0].id.videoId)
             }
-            queue.push({
+            queue.unshift({
                 title: info.title,
                 author: {
                     name: info.author.name,
@@ -147,7 +150,21 @@ async function musicBot(message, command, arguments) {
             dispatch.setVolume(volume)
             break
         case "queue":
-            let queueEmbed
+            let queueEmbed = new Discord.RichEmbed()
+            .setColor("#FF0000")
+            .setAuthor(message.author.tag, message.author.avatarURL)
+            .setTitle("Queue")
+            let x = 0
+            queue.forEach(element => {
+                if (x == 0) {
+                    queueEmbed.addField("Up Next", element.title)
+                }
+                else {
+                    queueEmbed.addField(`#${x}`, element.title)
+                }
+                ++x
+            })
+            message.channel.send(queueEmbed)
             break
     }
 }

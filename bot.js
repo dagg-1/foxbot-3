@@ -72,6 +72,9 @@ client.on('message', message => {
         case "np":
             musicBot(message, command, arguments)
             break
+        case "remove":
+            musicBot(message, command, arguments)
+            break
         //#endregion
     }
 })
@@ -112,7 +115,7 @@ async function getAnimal(message, command) {
 async function addQueue(message, arguments) {
     if (!arguments[0]) return
     let info
-    if (message.content.includes("https://youtu.be/" || message.content.includes("https://www.youtube.com/watch?v="))) {
+    if (message.content.includes("https://youtu.be/") || message.content.includes("https://www.youtube.com/watch?v=")) {
         info = await youtubedl.getBasicInfo(arguments[0])
     }
     else {
@@ -135,7 +138,7 @@ async function addQueue(message, arguments) {
     })
 }
 
-async function playMusic(message, command, arguments) {
+async function playMusic(message, arguments) {
     if (dispatch) return message.channel.send("Something is already playing! I can't be in two places at once!")
     if (!arguments[0] && !queue[0]) return message.channel.send("There's nothing queued, try using !add to add something or use !play to immediately play a video")
     if (!message.member.voiceChannel) return message.channel.send("You are not in a voice channel.")
@@ -180,7 +183,7 @@ async function musicBot(message, command, arguments) {
             message.channel.send(addEmbed)
             break
         case "play":
-            await playMusic(message, command, arguments)
+            await playMusic(message, arguments)
             playEmbed = new Discord.RichEmbed()
                 .setTitle(`**Now Playing:** ${queue[0].title}`)
                 .setAuthor(queue[0].author.name, queue[0].author.avatarURL, queue[0].author.link)
@@ -197,6 +200,7 @@ async function musicBot(message, command, arguments) {
             if (arguments[0] <= 0) return message.channel.send("Hello? I can't hear anything! Please keep it **above 0.0**")
             volume = arguments[0]
             dispatch.setVolume(volume)
+            message.channel.send(`Volume is now set to: ${dispatch.volume}!`)
             break
         case "queue":
             if (!queue[0]) return message.channel.send("Nothing is queued!")
@@ -238,6 +242,13 @@ async function musicBot(message, command, arguments) {
         case "np":
             if (!dispatch) return message.channel.send("Nothing is currently playing")
             message.channel.send(playEmbed)
+            break
+        case "remove":
+            if (!queue[0]) return message.channel.send("Nothing is queued!")
+            if (!arguments[0]) return message.channel.send("I can't remove nothing!")
+            if (arguments[0] > queue.length - 1 || arguments[0] < 0) return message.channel.send("Out of range!")
+            message.channel.send(`Removed **${queue[arguments[0]].title}** from the queue!`)
+            queue.splice(arguments[0],1)
             break
     }
 }

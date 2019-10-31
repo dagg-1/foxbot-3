@@ -19,7 +19,7 @@ let playingMessage
 const phrases = [
     "A animal has appeared!",
     "Woah, a animal has arrived!",
-    "The wild animal is here!",
+    "A wild animal is here!",
     "Say hello to this animal!"
 ]
 const splitter = /animal/gi

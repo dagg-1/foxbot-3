@@ -1,5 +1,5 @@
 # foxbot-3
-FoxBot r.3
+Third revision of the FoxBot
 
 ## Installation
 1. Download FFmpeg and add it to system path

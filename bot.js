@@ -25,7 +25,8 @@ const splitter = /animal/gi
 
 const urls = {
     fox: { uri: "https://dagg.xyz/randomfox", result: "link" },
-    shibe: { uri: "https://dog.ceo/api/breed/shiba/images/random", result: "message" }
+    shibe: { uri: "https://dog.ceo/api/breed/shiba/images/random", result: "message" },
+    cat: { uri: "http://aws.random.cat/meow", result: "file" }
 }
 
 client.login(token_file.discord.bot_token)
@@ -75,6 +76,9 @@ client.on('message', message => {
             getAnimal(message, command)
             break
         case "shibe":
+            getAnimal(message, command)
+            break
+        case "cat":
             getAnimal(message, command)
             break
         //#endregion

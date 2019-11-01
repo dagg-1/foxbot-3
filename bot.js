@@ -24,7 +24,8 @@ const phrases = [
 const splitter = /animal/gi
 
 const urls = {
-    fox: { uri: "https://dagg.xyz/randomfox", result: "link" }
+    fox: { uri: "https://dagg.xyz/randomfox", result: "link" },
+    shibe: { uri: "https://dog.ceo/api/breed/shiba/images/random", result: "message" }
 }
 
 client.login(token_file.discord.bot_token)
@@ -69,8 +70,11 @@ client.on('message', message => {
     const command = arguments.shift().toLowerCase();
 
     switch (command) {
-        //#region Fox Delivery
+        //#region Animal Delivery
         case "fox":
+            getAnimal(message, command)
+            break
+        case "shibe":
             getAnimal(message, command)
             break
         //#endregion
@@ -104,6 +108,12 @@ client.on('message', message => {
             musicBot(message, command, arguments)
             break
         //#endregion
+
+        //#region Help (Redirects to helpCMD() function)
+        case "help":
+            helpCMD(message)
+            break
+        //#endregion
     }
 })
 
@@ -127,7 +137,7 @@ async function getAnimal(message, command) {
                         case "➡":
                             animalEmbed.setImage(await requestIMG(command))
                             animalEmbed.setDescription(phrases[Math.floor(Math.random() * phrases.length)].replace(splitter, command))
-                            reaction.remove(message.author.id)
+                            reaction.remove(message.author.id).catch(() => console.log("A reaction failed to be removed, it's a common issue, and you may ignore it!"))
                             sentMessage.edit(animalEmbed)
                             break
                         case "⏹":
@@ -170,7 +180,7 @@ async function addQueue(message, arguments) {
 async function playMusic(message, arguments) {
     let pMGuild = message.guild
     if (dispatch[pMGuild.id]) return message.channel.send("Something is already playing! I can't be in two places at once!")
-    if (!arguments[0] && !queue[pMGuild.id][0]) return message.channel.send("There's nothing queued, try using !add to add something or use !play to immediately play a video")
+    if (!arguments[0] && !queue[pMGuild.id][0]) { message.channel.send("There's nothing queued, try using !add to add something or use !play to immediately play a video"); return "failure"} 
     if (!message.member.voiceChannel) { message.channel.send("You are not in a voice channel."); return "failure"}
     if (arguments[0]) { await addQueue(message, arguments) }
     message.member.voiceChannel.join()
@@ -227,10 +237,10 @@ async function musicBot(message, command, arguments) {
             break
         case "volume":
             if (!dispatch[mBGuild.id]) return message.channel.send("Nothing is currently playing! I can't control air!")
-            if (!arguments[0]) return message.channel.send(`The current volume is set to: ${dispatch[mBGuild.id].volume}`)
-            if (arguments[0] > 1.0) return message.channel.send("Sorry! I can't let you destroy your eardrums! Please keep it **below 1.0**")
-            if (arguments[0] <= 0) return message.channel.send("Hello? I can't hear anything! Please keep it **above 0.0**")
-            volume[mBGuild.id] = arguments[0]
+            if (!parseFloat(arguments[0])) return message.channel.send(`The current volume is set to: ${dispatch[mBGuild.id].volume}`)
+            if (parseFloat(arguments[0]) > 1.0) return message.channel.send("Sorry! I can't let you destroy your eardrums! Please keep it **below 1.0**")
+            if (parseFloat(arguments[0]) <= 0) return message.channel.send("Hello? I can't hear anything! Please keep it **above 0.0**")
+            volume[mBGuild.id] = parseFloat(arguments[0])
             dispatch[mBGuild.id].setVolume(volume[mBGuild.id])
             message.channel.send(`Volume is now set to: ${dispatch[mBGuild.id].volume}!`)
             break
@@ -270,6 +280,7 @@ async function musicBot(message, command, arguments) {
         case "clear":
             if (!queue[mBGuild.id][0]) return message.channel.send("Nothing is queued!")
             queue[mBGuild.id] = []
+            message.channel.send("The queue has been sucessfully emptied")
             break
         case "np":
             if (!dispatch[mBGuild.id]) return message.channel.send("Nothing is currently playing")
@@ -284,3 +295,22 @@ async function musicBot(message, command, arguments) {
             break
     }
 }
+
+async function helpCMD(message) {
+    let helpEmbed = new Discord.RichEmbed()
+    .setAuthor("FoxBot 3.0", client.user.avatarURL, "https://github.com/dagg-1/foxbot-3")
+    .setDescription("Click my name to visit my source code repository!")
+    .setThumbnail(client.user.avatarURL)
+    .addField(`${prefix}help`, "Displays this message")
+    .addField(`${prefix}fox`, "Sends a random picture of a fox")
+    .addField(`${prefix}play`, "Play music in a voice channel")
+    .addField(`${prefix}add`, "Adds a song to the queue")
+    .addField(`${prefix}queue`, "Displays the queue")
+    .addField(`${prefix}remove`, "Removes a song from the queue")
+    .addField(`${prefix}clear`, "Clears the queue")
+    .addField(`${prefix}stop`, "Clears the queue and stops all music")
+    .addField(`${prefix}np`, "Displays the currently playing song")
+    .addField(`${prefix}skip`, "Skip the current song")
+    .addField(`${prefix}volume`, "Set the volume")
+    message.channel.send(helpEmbed)
+} 

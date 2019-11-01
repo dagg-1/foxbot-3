@@ -1,4 +1,4 @@
-# foxbot-3
+# FoxBot 3
 Third revision of the FoxBot
 
 ## Installation

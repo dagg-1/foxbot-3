@@ -297,6 +297,7 @@ async function musicBot(message, command, arguments) {
         case "skip":
             if (!dispatch[mBGuild.id]) return message.channel.send("Nothing is currently playing")
             if (!queue[mBGuild.id][1]) return message.channel.send("There's nothing left to skip!")
+            repeat[mBGuild.id] = false
             dispatch[mBGuild.id].end()
             break
         case "clear":

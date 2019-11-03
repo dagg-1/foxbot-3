@@ -196,7 +196,7 @@ async function addQueue(message, arguments) {
 
 async function playMusic(message, arguments) {
     let pMGuild = message.guild
-    if (dispatch[pMGuild.id]) return message.channel.send("Something is already playing! I can't be in two places at once!")
+    if (dispatch[pMGuild.id]) { message.channel.send("Something is already playing! I can't be in two places at once!"); return "failure"}
     if (!arguments[0] && !queue[pMGuild.id][0]) { message.channel.send("There's nothing queued, try using !add to add something or use !play to immediately play a video"); return "failure" }
     if (!message.member.voiceChannel) { message.channel.send("You are not in a voice channel."); return "failure" }
     if (arguments[0]) { await addQueue(message, arguments) }

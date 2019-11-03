@@ -83,7 +83,13 @@ client.on('message', message => {
             break
         //#endregion
 
-        //#region Music Bot (Redirects to musicBot() function)
+        //#region Misc
+        case "rng":
+            pRandomGenerator(message, arguments)
+            break
+        //#endregion
+
+        //#region Music
         case "play":
             musicBot(message, command, arguments)
             break
@@ -113,7 +119,7 @@ client.on('message', message => {
             break
         //#endregion
 
-        //#region Help (Redirects to helpCMD() function)
+        //#region Help
         case "help":
             helpCMD(message)
             break
@@ -241,7 +247,8 @@ async function musicBot(message, command, arguments) {
             break
         case "volume":
             if (!dispatch[mBGuild.id]) return message.channel.send("Nothing is currently playing! I can't control air!")
-            if (!parseFloat(arguments[0])) return message.channel.send(`The current volume is set to: ${dispatch[mBGuild.id].volume}`)
+            if (!arguments[0]) return message.channel.send(`The volume is currently set to ${dispatch[mBGuild.id].volume}`)
+            if (isNaN(arguments[0])) return message.channel.send("That's not a number between 0.0 and 1.0")
             if (parseFloat(arguments[0]) > 1.0) return message.channel.send("Sorry! I can't let you destroy your eardrums! Please keep it **below 1.0**")
             if (parseFloat(arguments[0]) <= 0) return message.channel.send("Hello? I can't hear anything! Please keep it **above 0.0**")
             volume[mBGuild.id] = parseFloat(arguments[0])
@@ -293,11 +300,34 @@ async function musicBot(message, command, arguments) {
         case "remove":
             if (!queue[mBGuild.id][0]) return message.channel.send("Nothing is queued!")
             if (!arguments[0]) return message.channel.send("I can't remove nothing!")
+            if (isNaN(arguments[0])) return message.channel.send("That's not even a number!")
             if (arguments[0] > queue[mBGuild.id].length - 1 || arguments[0] < 0) return message.channel.send("Out of range!")
             message.channel.send(`Removed **${queue[mBGuild.id][arguments[0]].title}** from the queue!`)
             queue[mBGuild.id].splice(arguments[0], 1)
             break
     }
+}
+
+function pRandomGenerator(message, arguments) {
+    let pRGEmbed = new Discord.RichEmbed()
+    .setAuthor(message.author.tag, message.author.avatarURL)
+    .setColor(Math.floor(Math.random() * 16777215))
+    .setTitle("Random Number Generator")
+    if (!arguments[0]) {
+        pRGEmbed.setFooter("0-100")
+        pRGEmbed.setDescription(Math.floor(Math.random() * 101))
+    }
+    if (isNaN(arguments[0]) && arguments[0]) return message.channel.send("Not a number!")
+    if (arguments[0] && !arguments[1]) {
+        pRGEmbed.setFooter(`0 - ${arguments[0]}`)
+        pRGEmbed.setDescription(Math.floor(Math.random() * arguments[0] + 1))
+    }
+    if (isNaN(arguments[1]) && arguments[1]) return message.channel.send("Not a number!")
+    if (arguments[0] && arguments[1]) {
+        pRGEmbed.setFooter(`${arguments[0]} - ${arguments[1]}`)
+        pRGEmbed.setDescription(Math.floor(Math.random() * (arguments[1] - arguments[0]) + arguments[0] + 1))
+    }
+    message.channel.send(pRGEmbed)
 }
 
 async function helpCMD(message) {
@@ -315,6 +345,7 @@ async function helpCMD(message) {
     .addField(`${prefix}stop`, "Clears the queue and stops all music")
     .addField(`${prefix}np`, "Displays the currently playing song")
     .addField(`${prefix}skip`, "Skip the current song")
-    .addField(`${prefix}volume`, "Set the volume")
+    .addField(`${prefix}volume`, "Set the volume in a range of 0.0 to 1.0")
+    .addField(`${prefix}rng`, `Get a random number in a range [${prefix}rng min max], [${prefix}rng max], or [${prefix}rng]`)
     message.channel.send(helpEmbed)
 } 

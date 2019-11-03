@@ -367,6 +367,7 @@ async function helpCMD(message) {
         .addField(`${prefix}np`, "Displays the currently playing song")
         .addField(`${prefix}skip`, "Skip the current song")
         .addField(`${prefix}volume`, "Set the volume in a range of 0.0 to 1.0")
+        .addField(`${prefix}repeat`, "Toggles repeat on or off")
         .addField(`${prefix}rng`, `Get a random number in a range [${prefix}rng min max], [${prefix}rng max], or [${prefix}rng]`)
     message.channel.send(helpEmbed)
 } 

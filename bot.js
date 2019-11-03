@@ -319,7 +319,7 @@ async function musicBot(message, command, arguments) {
         case "repeat":
             if (!dispatch[mBGuild.id]) return message.channel.send("Nothing is currently playing")
             repeat[mBGuild.id] = !repeat[mBGuild.id]
-            if (repeat[mBGuild] == true) return message.channel.send("The song will now repeat")
+            if (repeat[mBGuild.id] == true) return message.channel.send("The song will now repeat")
             message.channel.send("The song will not repeat")
             break
     }

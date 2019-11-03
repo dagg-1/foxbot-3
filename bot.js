@@ -211,7 +211,10 @@ async function playMusic(message, arguments) {
                     if (repeat[pMGuild.id] == false) {
                         queue[pMGuild.id].shift()
                     }
-                    if (queue[pMGuild.id][0]) {
+                    if (repeat[pMGuild.id] == true) {
+                        untilEmpty()
+                    }
+                    else if (queue[pMGuild.id][0] && repeat[pMGuild.id] == false) {
                         playEmbed[pMGuild.id].setTitle(`**Now Playing:** ${queue[pMGuild.id][0].title}`)
                             .setAuthor(queue[pMGuild.id][0].author.name, queue[pMGuild.id][0].author.avatarURL, queue[pMGuild.id][0].author.link)
                             .setDescription(queue[pMGuild.id][0].url)

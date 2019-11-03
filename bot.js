@@ -14,6 +14,7 @@ let volume = []
 let queue = []
 let playEmbed = []
 let playingMessage = []
+let repeat = []
 
 const phrases = [
     "A animal has appeared!",
@@ -39,16 +40,17 @@ client.on("guildCreate", guild => {
     dispatch.push(guild.id)
     playEmbed.push(guild.id)
     playingMessage.push(guild.id)
+    repeat.push(guild.id)
+    repeat[guild.id] = false
 })
 
 client.on("guildDelete", guild => {
-    volume.push(guild.id)
-    volume[guild.id] = 0.5
-    queue.push(guild.id)
-    queue[guild.id] = []
-    dispatch.push(guild.id)
-    playEmbed.push(guild.id)
-    playingMessage.push(guild.id)
+    volume.splice(guild.id, 1)
+    queue.splice(guild.id, 1)
+    dispatch.splice(guild.id, 1)
+    playEmbed.splice(guild.id, 1)
+    playingMessage.splice(guild.id, 1)
+    repeat.splice(guild.id, 1)
 })
 
 client.on('ready', () => {
@@ -61,6 +63,8 @@ client.on('ready', () => {
         dispatch.push(guild.id)
         playEmbed.push(guild.id)
         playingMessage.push(guild.id)
+        repeat.push(guild.id)
+        repeat[guild.id] = false
     })
 })
 
@@ -115,6 +119,9 @@ client.on('message', message => {
             musicBot(message, command, arguments)
             break
         case "remove":
+            musicBot(message, command, arguments)
+            break
+        case "repeat":
             musicBot(message, command, arguments)
             break
         //#endregion
@@ -190,17 +197,20 @@ async function addQueue(message, arguments) {
 async function playMusic(message, arguments) {
     let pMGuild = message.guild
     if (dispatch[pMGuild.id]) return message.channel.send("Something is already playing! I can't be in two places at once!")
-    if (!arguments[0] && !queue[pMGuild.id][0]) { message.channel.send("There's nothing queued, try using !add to add something or use !play to immediately play a video"); return "failure"} 
-    if (!message.member.voiceChannel) { message.channel.send("You are not in a voice channel."); return "failure"}
+    if (!arguments[0] && !queue[pMGuild.id][0]) { message.channel.send("There's nothing queued, try using !add to add something or use !play to immediately play a video"); return "failure" }
+    if (!message.member.voiceChannel) { message.channel.send("You are not in a voice channel."); return "failure" }
     if (arguments[0]) { await addQueue(message, arguments) }
     message.member.voiceChannel.join()
         .then(connection => {
+            repeat[pMGuild.id] = false
             untilEmpty()
             function untilEmpty() {
                 dispatch[pMGuild.id] = connection.playStream(youtubedl(queue[pMGuild.id][0].url, { highWaterMark: 32000000 }))
                 dispatch[pMGuild.id].setVolume(volume[pMGuild.id])
                 dispatch[pMGuild.id].on('end', () => {
-                    queue[pMGuild.id].shift()
+                    if (repeat[pMGuild.id] == false) {
+                        queue[pMGuild.id].shift()
+                    }
                     if (queue[pMGuild.id][0]) {
                         playEmbed[pMGuild.id].setTitle(`**Now Playing:** ${queue[pMGuild.id][0].title}`)
                             .setAuthor(queue[pMGuild.id][0].author.name, queue[pMGuild.id][0].author.avatarURL, queue[pMGuild.id][0].author.link)
@@ -211,6 +221,7 @@ async function playMusic(message, arguments) {
                         untilEmpty()
                     }
                     else {
+                        repeat[pMGuild.id] = false
                         dispatch[pMGuild.id] = undefined
                         connection.disconnect()
                     }
@@ -305,14 +316,20 @@ async function musicBot(message, command, arguments) {
             message.channel.send(`Removed **${queue[mBGuild.id][arguments[0]].title}** from the queue!`)
             queue[mBGuild.id].splice(arguments[0], 1)
             break
+        case "repeat":
+            if (!dispatch[mBGuild.id]) return message.channel.send("Nothing is currently playing")
+            repeat[mBGuild.id] = !repeat[mBGuild.id]
+            if (repeat[mBGuild] == true) return message.channel.send("The song will now repeat")
+            message.channel.send("The song will not repeat")
+            break
     }
 }
 
 function pRandomGenerator(message, arguments) {
     let pRGEmbed = new Discord.RichEmbed()
-    .setAuthor(message.author.tag, message.author.avatarURL)
-    .setColor(Math.floor(Math.random() * 16777215))
-    .setTitle("Random Number Generator")
+        .setAuthor(message.author.tag, message.author.avatarURL)
+        .setColor(Math.floor(Math.random() * 16777215))
+        .setTitle("Random Number Generator")
     if (!arguments[0]) {
         pRGEmbed.setFooter("0-100")
         pRGEmbed.setDescription(Math.floor(Math.random() * 101))
@@ -332,20 +349,20 @@ function pRandomGenerator(message, arguments) {
 
 async function helpCMD(message) {
     let helpEmbed = new Discord.RichEmbed()
-    .setAuthor("FoxBot 3.0", client.user.avatarURL, "https://github.com/dagg-1/foxbot-3")
-    .setDescription("Click my name to visit my source code repository!")
-    .setThumbnail(client.user.avatarURL)
-    .addField(`${prefix}help`, "Displays this message")
-    .addField(`${prefix}fox`, "Sends a random picture of a fox")
-    .addField(`${prefix}play`, "Play music in a voice channel")
-    .addField(`${prefix}add`, "Adds a song to the queue")
-    .addField(`${prefix}queue`, "Displays the queue")
-    .addField(`${prefix}remove`, "Removes a song from the queue")
-    .addField(`${prefix}clear`, "Clears the queue")
-    .addField(`${prefix}stop`, "Clears the queue and stops all music")
-    .addField(`${prefix}np`, "Displays the currently playing song")
-    .addField(`${prefix}skip`, "Skip the current song")
-    .addField(`${prefix}volume`, "Set the volume in a range of 0.0 to 1.0")
-    .addField(`${prefix}rng`, `Get a random number in a range [${prefix}rng min max], [${prefix}rng max], or [${prefix}rng]`)
+        .setAuthor("FoxBot 3.0", client.user.avatarURL, "https://github.com/dagg-1/foxbot-3")
+        .setDescription("Click my name to visit my source code repository!")
+        .setThumbnail(client.user.avatarURL)
+        .addField(`${prefix}help`, "Displays this message")
+        .addField(`${prefix}fox`, "Sends a random picture of a fox")
+        .addField(`${prefix}play`, "Play music in a voice channel")
+        .addField(`${prefix}add`, "Adds a song to the queue")
+        .addField(`${prefix}queue`, "Displays the queue")
+        .addField(`${prefix}remove`, "Removes a song from the queue")
+        .addField(`${prefix}clear`, "Clears the queue")
+        .addField(`${prefix}stop`, "Clears the queue and stops all music")
+        .addField(`${prefix}np`, "Displays the currently playing song")
+        .addField(`${prefix}skip`, "Skip the current song")
+        .addField(`${prefix}volume`, "Set the volume in a range of 0.0 to 1.0")
+        .addField(`${prefix}rng`, `Get a random number in a range [${prefix}rng min max], [${prefix}rng max], or [${prefix}rng]`)
     message.channel.send(helpEmbed)
 } 

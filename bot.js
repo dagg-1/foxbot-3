@@ -24,7 +24,7 @@ const phrases = [
 const splitter = /animal/gi
 
 const urls = {
-    fox: { uri: "https://dagg.xyz/randomfox", result: "link" },
+    fox: { uri: "https://randomfox.ca/floof", result: "image" },
     shibe: { uri: "https://dog.ceo/api/breed/shiba/images/random", result: "message" },
     cat: { uri: "http://aws.random.cat/meow", result: "file" }
 }

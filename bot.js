@@ -38,7 +38,7 @@ mongo.connect(`mongodb://${token_file.mongo.hostname}:${token_file.mongo.port}/`
     let collections = await database.collections()
     let prefixes = database.collection("prefixes")
     client.on("guildCreate", guild => {
-        prefixes.insertOne({ sid: guild.id, prefix: defprefix })
+        prefixes.insertOne({ sid: guild.id, prefix: defprefix, name: guild.name })
         prefix.push(guild.id)
         prefix[guild.id] = defprefix
         volume.push(guild.id)
@@ -65,16 +65,12 @@ mongo.connect(`mongodb://${token_file.mongo.hostname}:${token_file.mongo.port}/`
     
     client.on('ready', async () => {
         if (!collections[0]) {
-            database.createCollection("prefixes", function (err, res) {
-                client.guilds.tap(guild => {
-                    prefixes.insertOne({ sid: guild.id, prefix: defprefix })
-                })
-            })
+            database.createCollection("prefixes")
         }
         prefixes.find({}).toArray(function (err, res) {
             if (!res[0]) {
                 client.guilds.tap(guild => {
-                    prefixes.insertOne({ sid: guild.id, prefix: defprefix })
+                    prefixes.insertOne({ sid: guild.id, prefix: defprefix, name: guild.name })
                 })
             }
             res.forEach(element => {

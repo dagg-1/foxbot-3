@@ -3,12 +3,14 @@ const token_file = require('./tokens.json')
 const axios = require('axios')
 const youtubedl = require('ytdl-core')
 const youtubeapi = require('youtube-api-v3-search')
+const mongo = require('mongodb')
 
 const yttoken = token_file.youtube.api_key
 
 const client = new Discord.Client()
-const prefix = "!"
+const defprefix = "!"
 
+let prefix = []
 let dispatch = []
 let volume = []
 let queue = []
@@ -30,32 +32,16 @@ const urls = {
     cat: { uri: "http://aws.random.cat/meow", result: "file" }
 }
 
-client.login(token_file.discord.bot_token)
-
-client.on("guildCreate", guild => {
-    volume.push(guild.id)
-    volume[guild.id] = 0.5
-    queue.push(guild.id)
-    queue[guild.id] = []
-    dispatch.push(guild.id)
-    playEmbed.push(guild.id)
-    playingMessage.push(guild.id)
-    repeat.push(guild.id)
-    repeat[guild.id] = false
-})
-
-client.on("guildDelete", guild => {
-    volume.splice(guild.id, 1)
-    queue.splice(guild.id, 1)
-    dispatch.splice(guild.id, 1)
-    playEmbed.splice(guild.id, 1)
-    playingMessage.splice(guild.id, 1)
-    repeat.splice(guild.id, 1)
-})
-
-client.on('ready', () => {
-    console.log(`Logged on successfully as ${client.user.tag}`)
-    client.guilds.tap(guild => {
+console.log("Starting FoxBot\nConnecting to database")
+mongo.connect(`mongodb://${token_file.mongo.hostname}:${token_file.mongo.port}/`, { useUnifiedTopology: true }, async function (err, db) {
+    console.log("Connected to the database\nRetrieving data")
+    database = db.db(token_file.mongo.db)
+    let collections = await database.collections()
+    let prefixes = database.collection("prefixes")
+    client.on("guildCreate", guild => {
+        prefixes.insertOne({ sid: guild.id, prefix: defprefix, name: guild.name })
+        prefix.push(guild.id)
+        prefix[guild.id] = defprefix
         volume.push(guild.id)
         volume[guild.id] = 0.5
         queue.push(guild.id)
@@ -66,12 +52,56 @@ client.on('ready', () => {
         repeat.push(guild.id)
         repeat[guild.id] = false
     })
+    
+    client.on("guildDelete", guild => {
+        prefixes.deleteOne({ sid: guild.id })
+        prefix.splice(guild.id, 1)
+        volume.splice(guild.id, 1)
+        queue.splice(guild.id, 1)
+        dispatch.splice(guild.id, 1)
+        playEmbed.splice(guild.id, 1)
+        playingMessage.splice(guild.id, 1)
+        repeat.splice(guild.id, 1)
+    })
+    
+    client.on('ready', async () => {
+        if (!collections[0]) {
+            database.createCollection("prefixes")
+        }
+        prefixes.find({}).toArray(function (err, res) {
+            if (!res[0]) {
+                client.guilds.tap(guild => {
+                    prefixes.insertOne({ sid: guild.id, prefix: defprefix, name: guild.name })
+                })
+            }
+            res.forEach(element => {
+                prefix.push(element.sid)
+                prefix[element.sid] = element.prefix
+            })
+        })
+        client.guilds.tap(guild => {
+            volume.push(guild.id)
+            volume[guild.id] = 0.5
+            queue.push(guild.id)
+            queue[guild.id] = []
+            dispatch.push(guild.id)
+            playEmbed.push(guild.id)
+            playingMessage.push(guild.id)
+            repeat.push(guild.id)
+            repeat[guild.id] = false
+        })
+        console.log(`Logged on successfully as ${client.user.tag}`)
+    })
+    console.log("Initialisation successful\nLogging in...")
+    client.login(token_file.discord.bot_token)
 })
 
 client.on('message', message => {
     console.log(`@${message.author.tag} - #${message.channel.name}: ${message.content}`)
-    if (!message.content.startsWith(prefix) || message.channel.type == "dm" || message.author.bot) return
-    const arguments = message.content.slice(prefix.length).split(/ +/)
+    if (message.author.bot) return
+    let guild = message.member.guild
+    if (!message.content.startsWith(prefix[guild.id]) || message.channel.type == "dm") return
+    const arguments = message.content.slice(prefix[guild.id].length).split(/ +/)
     const command = arguments.shift().toLowerCase();
 
     switch (command) {
@@ -196,7 +226,7 @@ async function addQueue(message, arguments) {
 
 async function playMusic(message, arguments) {
     let pMGuild = message.guild
-    if (dispatch[pMGuild.id]) { message.channel.send("Something is already playing! I can't be in two places at once!"); return "failure"}
+    if (dispatch[pMGuild.id]) { message.channel.send("Something is already playing! I can't be in two places at once!"); return "failure" }
     if (!arguments[0] && !queue[pMGuild.id][0]) { message.channel.send("There's nothing queued, try using !add to add something or use !play to immediately play a video"); return "failure" }
     if (!message.member.voiceChannel) { message.channel.send("You are not in a voice channel."); return "failure" }
     if (arguments[0]) { await addQueue(message, arguments) }
@@ -352,22 +382,23 @@ function pRandomGenerator(message, arguments) {
 }
 
 async function helpCMD(message) {
+    let guild = message.member.guild
     let helpEmbed = new Discord.RichEmbed()
         .setAuthor("FoxBot 3.0", client.user.avatarURL, "https://github.com/dagg-1/foxbot-3")
         .setDescription("Click my name to visit my source code repository!")
         .setThumbnail(client.user.avatarURL)
-        .addField(`${prefix}help`, "Displays this message")
-        .addField(`${prefix}fox`, "Sends a random picture of a fox")
-        .addField(`${prefix}play`, "Play music in a voice channel")
-        .addField(`${prefix}add`, "Adds a song to the queue")
-        .addField(`${prefix}queue`, "Displays the queue")
-        .addField(`${prefix}remove`, "Removes a song from the queue")
-        .addField(`${prefix}clear`, "Clears the queue")
-        .addField(`${prefix}stop`, "Clears the queue and stops all music")
-        .addField(`${prefix}np`, "Displays the currently playing song")
-        .addField(`${prefix}skip`, "Skip the current song")
-        .addField(`${prefix}volume`, "Set the volume in a range of 0.0 to 1.0")
-        .addField(`${prefix}repeat`, "Toggles repeat on or off")
-        .addField(`${prefix}rng`, `Get a random number in a range [${prefix}rng min max], [${prefix}rng max], or [${prefix}rng]`)
+        .addField(`${prefix[guild.id]}help`, "Displays this message")
+        .addField(`${prefix[guild.id]}fox`, "Sends a random picture of a fox")
+        .addField(`${prefix[guild.id]}play`, "Play music in a voice channel")
+        .addField(`${prefix[guild.id]}add`, "Adds a song to the queue")
+        .addField(`${prefix[guild.id]}queue`, "Displays the queue")
+        .addField(`${prefix[guild.id]}remove`, "Removes a song from the queue")
+        .addField(`${prefix[guild.id]}clear`, "Clears the queue")
+        .addField(`${prefix[guild.id]}stop`, "Clears the queue and stops all music")
+        .addField(`${prefix[guild.id]}np`, "Displays the currently playing song")
+        .addField(`${prefix[guild.id]}skip`, "Skip the current song")
+        .addField(`${prefix[guild.id]}volume`, "Set the volume in a range of 0.0 to 1.0")
+        .addField(`${prefix[guild.id]}repeat`, "Toggles repeat on or off")
+        .addField(`${prefix[guild.id]}rng`, `Get a random number in a range [${prefix[guild.id]}rng min max], [${prefix[guild.id]}rng max], or [${prefix[guild.id]}rng]`)
     message.channel.send(helpEmbed)
 } 

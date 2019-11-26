@@ -101,9 +101,10 @@ mongo.connect(`mongodb://${token_file.mongo.hostname}:${token_file.mongo.port}/`
 
 client.on('message', message => {
     console.log(`@${message.author.tag} - #${message.channel.name}: ${message.content}`)
+    if (message.author.bot) return
     let guild = message.member.guild
-    if (!message.content.startsWith(prefix[guild.id]) || message.channel.type == "dm" || message.author.bot) return
-    const arguments = message.content.slice(prefix.length).split(/ +/)
+    if (!message.content.startsWith(prefix[guild.id]) || message.channel.type == "dm") return
+    const arguments = message.content.slice(prefix[guild.id].length).split(/ +/)
     const command = arguments.shift().toLowerCase();
 
     switch (command) {

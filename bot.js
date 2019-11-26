@@ -32,8 +32,9 @@ const urls = {
     cat: { uri: "http://aws.random.cat/meow", result: "file" }
 }
 
+console.log("Starting FoxBot\nConnecting to database")
 mongo.connect(`mongodb://${token_file.mongo.hostname}:${token_file.mongo.port}/`, { useUnifiedTopology: true }, async function (err, db) {
-    console.log("Connected to a database\nContinuing with init")
+    console.log("Connected to the database\nRetrieving data")
     database = db.db(token_file.mongo.db)
     let collections = await database.collections()
     let prefixes = database.collection("prefixes")
@@ -91,7 +92,7 @@ mongo.connect(`mongodb://${token_file.mongo.hostname}:${token_file.mongo.port}/`
         })
         console.log(`Logged on successfully as ${client.user.tag}`)
     })
-
+    console.log("Initialisation successful\nLogging in...")
     client.login(token_file.discord.bot_token)
 })
 

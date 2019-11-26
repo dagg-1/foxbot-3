@@ -4,5 +4,10 @@
     },
     "youtube": {
         "api_key": "API_KEY"
+    },
+    "mongo": {
+        "hostname": "localhost",
+        "port": "27017",
+        "db": "FoxBot"
     }
 }

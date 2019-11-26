@@ -32,41 +32,51 @@ const urls = {
     cat: { uri: "http://aws.random.cat/meow", result: "file" }
 }
 
-client.login(token_file.discord.bot_token)
-
-client.on("guildCreate", guild => {
-    volume.push(guild.id)
-    volume[guild.id] = 0.5
-    queue.push(guild.id)
-    queue[guild.id] = []
-    dispatch.push(guild.id)
-    playEmbed.push(guild.id)
-    playingMessage.push(guild.id)
-    repeat.push(guild.id)
-    repeat[guild.id] = false
-})
-
-client.on("guildDelete", guild => {
-    volume.splice(guild.id, 1)
-    queue.splice(guild.id, 1)
-    dispatch.splice(guild.id, 1)
-    playEmbed.splice(guild.id, 1)
-    playingMessage.splice(guild.id, 1)
-    repeat.splice(guild.id, 1)
-})
-
-client.on('ready', () => {
-    mongo.connect(`mongodb://${token_file.mongo.hostname}:${token_file.mongo.port}/`, { useUnifiedTopology: true }, async function (err, db) {
-        database = db.db(token_file.mongo.db)
-        let collections = await database.collections()
+mongo.connect(`mongodb://${token_file.mongo.hostname}:${token_file.mongo.port}/`, { useUnifiedTopology: true }, async function (err, db) {
+    console.log("Connected to a database\nContinuing with init")
+    database = db.db(token_file.mongo.db)
+    let collections = await database.collections()
+    let prefixes = database.collection("prefixes")
+    client.on("guildCreate", guild => {
+        prefixes.insertOne({ sid: guild.id, prefix: defprefix })
+        prefix.push(guild.id)
+        prefix[guild.id] = defprefix
+        volume.push(guild.id)
+        volume[guild.id] = 0.5
+        queue.push(guild.id)
+        queue[guild.id] = []
+        dispatch.push(guild.id)
+        playEmbed.push(guild.id)
+        playingMessage.push(guild.id)
+        repeat.push(guild.id)
+        repeat[guild.id] = false
+    })
+    
+    client.on("guildDelete", guild => {
+        prefixes.deleteOne({ sid: guild.id })
+        prefix.splice(guild.id, 1)
+        volume.splice(guild.id, 1)
+        queue.splice(guild.id, 1)
+        dispatch.splice(guild.id, 1)
+        playEmbed.splice(guild.id, 1)
+        playingMessage.splice(guild.id, 1)
+        repeat.splice(guild.id, 1)
+    })
+    
+    client.on('ready', async () => {
         if (!collections[0]) {
             database.createCollection("prefixes", function (err, res) {
                 client.guilds.tap(guild => {
-                    database.collection("prefixes").insertOne({ sid: guild.id, prefix: defprefix })
+                    prefixes.insertOne({ sid: guild.id, prefix: defprefix })
                 })
             })
         }
-        database.collection("prefixes").find({}).toArray(function(err, res) {
+        prefixes.find({}).toArray(function (err, res) {
+            if (!res[0]) {
+                client.guilds.tap(guild => {
+                    prefixes.insertOne({ sid: guild.id, prefix: defprefix })
+                })
+            }
             res.forEach(element => {
                 prefix.push(element.sid)
                 prefix[element.sid] = element.prefix
@@ -85,6 +95,8 @@ client.on('ready', () => {
         })
         console.log(`Logged on successfully as ${client.user.tag}`)
     })
+
+    client.login(token_file.discord.bot_token)
 })
 
 client.on('message', message => {

@@ -9,6 +9,7 @@ const yttoken = token_file.youtube.api_key
 
 const client = new Discord.Client()
 const defprefix = "!"
+let prefixes
 
 let prefix = []
 let dispatch = []
@@ -37,7 +38,7 @@ mongo.connect(`mongodb://${token_file.mongo.hostname}:${token_file.mongo.port}/`
     console.log("Connected to the database\nRetrieving data")
     database = db.db(token_file.mongo.db)
     let collections = await database.collections()
-    let prefixes = database.collection("prefixes")
+    prefixes = database.collection("prefixes")
     client.on("guildCreate", guild => {
         prefixes.insertOne({ sid: guild.id, prefix: defprefix, name: guild.name })
         prefix.push(guild.id)
@@ -52,7 +53,7 @@ mongo.connect(`mongodb://${token_file.mongo.hostname}:${token_file.mongo.port}/`
         repeat.push(guild.id)
         repeat[guild.id] = false
     })
-    
+
     client.on("guildDelete", guild => {
         prefixes.deleteOne({ sid: guild.id })
         prefix.splice(guild.id, 1)
@@ -63,13 +64,14 @@ mongo.connect(`mongodb://${token_file.mongo.hostname}:${token_file.mongo.port}/`
         playingMessage.splice(guild.id, 1)
         repeat.splice(guild.id, 1)
     })
-    
+
     client.on('ready', async () => {
         if (!collections[0]) {
             database.createCollection("prefixes")
         }
-        prefixes.find({}).toArray(function (err, res) {
-            if (!res[0]) {
+        prefixes.find({}).toArray(async function (err, res) {
+            let amountOfEntries = await prefixes.countDocuments()
+            if (amountOfEntries < client.guilds.size) {
                 client.guilds.tap(guild => {
                     prefixes.insertOne({ sid: guild.id, prefix: defprefix, name: guild.name })
                 })
@@ -160,6 +162,16 @@ client.on('message', message => {
         case "help":
             helpCMD(message)
             break
+        //#endregion
+
+        //#region Prefix
+        case "prefix":
+            changePrefix(message, arguments)
+            break
+        //#endregion
+
+        //#region 
+        
         //#endregion
     }
 })
@@ -400,5 +412,15 @@ async function helpCMD(message) {
         .addField(`${prefix[guild.id]}volume`, "Set the volume in a range of 0.0 to 1.0")
         .addField(`${prefix[guild.id]}repeat`, "Toggles repeat on or off")
         .addField(`${prefix[guild.id]}rng`, `Get a random number in a range [${prefix[guild.id]}rng min max], [${prefix[guild.id]}rng max], or [${prefix[guild.id]}rng]`)
+        .addField(`${prefix[guild.id]}prefix`, "Set the server prefix")
     message.channel.send(helpEmbed)
-} 
+}
+
+function changePrefix(message, arguments) {
+    if (!arguments[0]) return message.channel.send(`Current prefix: ${prefix[message.member.guild.id]}`)
+    if (!message.member.hasPermission("MANAGE_GUILD")) return message.channel.send("You do not have permission to modify prefixes.")
+    prefixes.updateOne({ sid: message.member.guild.id }, { $set: { prefix: arguments[0] } }, () => {
+        prefix[message.member.guild.id] = arguments[0]
+        message.channel.send(`Prefix successfully set to ${prefix[message.member.guild.id]}`)
+    })
+}
